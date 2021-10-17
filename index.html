@@ -35,40 +35,37 @@
             }
 
             draw() {
-                this.#ctx.globalCompositeOperation = 'source-over';
                 this.#ctx.beginPath();
+                this.#ctx.globalCompositeOperation = 'source-over';
                 var startAngle = 0; // Starting point on circle
                 var endAngle = 2 * Math.PI; // End point on circle
-                this.#ctx.arc(this.x, this.y, this.radius, startAngle, endAngle);
                 this.#ctx.fillStyle = this.#color;
-                this.#ctx.fill();
-                this.#ctx.closePath();
 
+                this.#ctx.arc(this.x, this.y, this.radius, startAngle, endAngle);
+                this.#ctx.fill();
             }
 
             clear() {
-                this.#ctx.globalCompositeOperation = 'destination-out';
                 this.#ctx.beginPath();
+                this.#ctx.globalCompositeOperation = 'destination-out';
                 var startAngle = 0; // Starting point on circle
                 var endAngle = 2 * Math.PI; // End point on circle
-                this.#ctx.arc(this.x, this.y, this.radius +1 , startAngle, endAngle);
                 this.#ctx.fillStyle = this.#color;
-                this.#ctx.fill();
-                this.#ctx.closePath();
-                this.#ctx.globalCompositeOperation = 'source-over';
 
-                
+                this.#ctx.arc(this.x, this.y, this.radius +1 , startAngle, endAngle);
+                this.#ctx.fill();
+                this.#ctx.globalCompositeOperation = 'source-over';
             }
 
           
         }
 
         class HitBall extends Ball {
-            #interval;
+
             #hit;
-            constructor(ctx, x, y, radius, color, interval, dest) {
+
+            constructor(ctx, x, y, radius, color) {
                 super(ctx, x, y, radius, color);
-                this.#interval = interval;
                 this.#hit = false;
             }
 
@@ -89,41 +86,16 @@
         }
 
         class MovingBall extends Ball {
-            #obstacles;
-            #ms;
-            #interval;
-
-            constructor(ctx, x, y, radius, color, obstacles, ms, dest) {
+            constructor(ctx, x, y, radius, color) {
                 super(ctx, x, y, radius, color);
-                this.#obstacles = obstacles;
-                this.#ms = ms;
-                this.#interval = setInterval(() => {
-                    if (this.y >= -10) {
-                    this.clear();
-                    this.y -=10;
-                    this.draw();
-
-                    for(let i=0; i<this.#obstacles.length; i++) {
-                        if (this.#isHit(this.#obstacles[i]) && this.#obstacles[i].wasHit() == false) {
-                            this.#obstacles[i].clear();
-                            this.#obstacles[i].setHit();
-                            this.draw();
-                        }                        
-                    }
-                }
-                }, 100);  
             }
             
-            #isHit(ball) {
+            colision(ball) {
                 if (Math.sqrt(Math.pow(ball.x - this.x, 2) + Math.pow(ball.y - this.y, 2)) <= this.radius + ball.radius) {
                     return true;
                 } else {
                     return false;
                 }
-            }
-
-            getInterval() {
-                return this.#interval;
             }
         }
            
@@ -185,6 +157,9 @@
             #canvasWidth;
             #canvasHeight
 
+            #irqCounter;
+            #gameOn;
+
             // pad variables
             static #PAD_WIDTH  = 100;
             static #PAD_HEIGHT = 10;
@@ -194,15 +169,13 @@
 
             static GAME_AREA_WIDTH = 800;
             static GAME_AREA_HEIGHT = 600;
-
-            #balls = [];
-            #shootBalls = [];
-
             pad;
+            #staticBalls = [];
+            #shootBalls = [];
             #shootPossible;
             #counter;
 
-            #intervals = [];
+            #interval;
 
             constructor(canvasId, canvasWidth, canvasHeight) {
                 if (canvasHeight < 600 || canvasWidth < 800) {
@@ -221,16 +194,18 @@
             }
 
             init() {
-                this.pad = new Pad(this.#ctx, this.#PAD_INIT_X, this.#PAD_INIT_Y, Game.#PAD_WIDTH, Game.#PAD_HEIGHT, 'rgb(0,255,0)');
+                this.pad = new Pad(this.#ctx, this.#PAD_INIT_X, this.#PAD_INIT_Y, Game.#PAD_WIDTH, Game.#PAD_HEIGHT, 'rgb(0,0,255)');
                 this.#counter = 0;
+                this.#irqCounter = 0;
+                this.#gameOn = true;
+
                 this.#updateCounter();
 
                 var X = 60 + (this.#canvasWidth-Game.GAME_AREA_WIDTH)/2 ;
                 var Y = 30; 
 
                 for(let i=0; i< 8; i++  ) {
-                    let ball = new HitBall(this.#ctx, X, Y, 20, 'rgh(255,0,0)', 0, 0);
-                    this.#balls.push(ball);
+                    this.#staticBalls.push(new HitBall(this.#ctx, X, Y, 20, 'rgh(255,0,0)'));
                     X = X + 70;
                 }
                 this.#addListeners();
@@ -242,13 +217,13 @@
             }
 
             #shoot() {
-                var ball = new MovingBall(this.#ctx, this.pad.getX(), this.pad.getY() - Game.#PAD_HEIGHT - 15, 15, 'rgb(0,255,0)', this.#balls, 0, 0);
-                this.#shootBalls.push(ball); 
+                this.#shootBalls.push(new MovingBall(this.#ctx, this.pad.getX(), this.pad.getY() - Game.#PAD_HEIGHT - 15, 15, 'rgb(0,255,0)', this.#staticBalls, 0, 0)); 
             }
             
             #updateCounter() {
                 this.#ctx.font = "30px Arial";
-                this.#ctx.clearRect(750, 30, 30, 30);
+                this.#ctx.clearRect(750, 0, 200, 200);
+                // this.#ctx.fillRect(750, 0, 200, 200);
                 this.#ctx.fillText(this.#counter, 750, 30);
             }
 
@@ -265,65 +240,108 @@
             keyListener(e) {
                 switch(e.keyCode) {
                         case 37: //left
+                        if (this.#gameOn) {
                             this.pad.goLeft();
-                            break;
+                        }
+                        break;
                         case 39: //right
+                        if (this.#gameOn) {
                             this.pad.goRight();
-                            break;
+                        }
+                        break;
                         case 32: //space
-                            if (this.#shootPossible == true) {
-                                this.#shootPossible = false;
-                                this.#shoot();
-                            }
-                            break;
+                        if (this.#shootPossible == true && this.#gameOn) {
+                            this.#shootPossible = false;
+                            this.#shoot();
+                        }
+                        break;
                     }
             }
 
             #setRunners() {
-                let interval = setInterval(() => {
-                    for(let i=0; i<this.#balls.length; i++) {
-                        if (!this.#balls[i].wasHit()) { 
-                            this.#balls[i].goDown();    
-                        } else {
-                            this.#counter++;
-                            this.#updateCounter();
-                        }
-                        if(this.#balls[i].y > 600) {
-                            this.#gameOver();
-                        }
+                this.#interval = setInterval(() => {
 
+                    if ( this.#irqCounter == 20) {
+                        for(let i=0; i<this.#staticBalls.length; i++) {
+                            if (!this.#staticBalls[i].wasHit()) { 
+                                this.#staticBalls[i].goDown();    
+                            } else {
+                                this.#counter++;
+                                this.#updateCounter();
+                            }
+                            if(this.#staticBalls[i].y > 600) {
+                                this.#gameOver();
+                            }
+
+                            
+                        }
+                        var X = 60 + (this.#canvasWidth-Game.GAME_AREA_WIDTH)/2 ;
+                        var Y = 30; 
+                        for(let i=0; i< 8; i++ ) {
+                                this.#staticBalls.push(new HitBall(this.#ctx, X, Y, 20, 'rgh(255,0,0)', 0, 0));
+                                X = X + 70;
+                        }
+                    }
+                    
+                    for(var j=0; j<this.#shootBalls.length; j++) {
+                        if (this.#shootBalls[j].y >= -10) {
+                            //move shoot ball
+                            this.#shootBalls[j].clear();
+                            this.#shootBalls[j].y -=20;
+                            this.#shootBalls[j].draw();
+                            
+                            // check for collision
+                            for(let i=0; i<this.#staticBalls.length; i++) {
+                                if (this.#shootBalls[j].colision(this.#staticBalls[i]) ) {
+                                    // clear both
+                                    this.#shootBalls[j].clear();
+                                    this.#staticBalls[i].clear();
+
+                                    this.#shootBalls.splice(j, 1);
+                                    this.#staticBalls.splice(i, 1);
+                                    // decrement due to splice
+                                    j--;
+                                    i--;
+                                    this.#counter++;
+                                    this.#updateCounter();
+                                }                        
+                            }
+                        } else {
+                            this.#shootBalls[j].clear();
+                            this.#shootBalls.splice(j, 1);
+                            j--;
+                        }
+                    };
+
+                    if (this.#irqCounter == 20) {
+                            this.#irqCounter = 0;
                         
+                    } else {
+                        this.#irqCounter++;
                     }
-                    var X = 60 + (this.#canvasWidth-Game.GAME_AREA_WIDTH)/2 ;
-                    var Y = 30; 
-                    for(let i=0; i< 8; i++ ) {
-                            this.#balls.push(new HitBall(this.#ctx, X, Y, 20, 'rgh(255,0,0)', 0, 0));
-                            X = X + 70;
-                    }
-                    this.#intervals.push(interval);
-                }, 2000); 
+
+                }, 100); 
             }
 
             #gameOver() {
                 console.log("GAME OVER!");
 
-                this.#intervals.forEach(interval => {clearInterval(interval);});
-                this.#shootBalls.forEach(ball => {clearInterval(ball.getInterval())});
-                // this.#ctx.globalCompositeOperation = 'source-over';
-                // this.#ctx.clearRect(0, 0, Game.GAME_AREA_WIDTH, Game.GAME_AREA_HEIGHT)
-                // this.#ctx.beginPath();
-                this.#ctx.fill();
+                clearInterval(this.#interval);
+
                 this.#ctx.globalCompositeOperation = 'source-over';
-                this.#ctx.fillStyle = 'white';
-                // this.#ctx.fillRect(0, 0, Game.GAME_AREA_WIDTH, Game.GAME_AREA_HEIGHT);
+                this.#ctx.fillStyle = 'black';
                 this.#ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 
                 this.#ctx.globalCompositeOperation = 'source-over';
-                this.#ctx.font = "80px Arial";
+                this.#ctx.font = "30px Arial";
                 this.#ctx.fillStyle = 'black';
-                this.#ctx.fillText("GAME OVER", 0, Game.GAME_AREA_HEIGHT/2);
+                this.#ctx.clearRect(0, 0, canvas.width, canvas.height);
+                this.#ctx.fillText("GAME", Game.GAME_AREA_WIDTH - 200, Game.GAME_AREA_HEIGHT/2);
+                this.#ctx.fillText("OVER", Game.GAME_AREA_WIDTH - 200, Game.GAME_AREA_HEIGHT/2 + 50);
 
+                this.#updateCounter();
+                this.#gameOn = false;
             }
 
         }
