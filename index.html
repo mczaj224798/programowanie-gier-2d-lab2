@@ -35,14 +35,17 @@
             }
 
             draw() {
+                var prevColor = this.#ctx.fillStyle;
+                this.#ctx.fillStyle = this.#color;
+
                 this.#ctx.beginPath();
                 this.#ctx.globalCompositeOperation = 'source-over';
                 var startAngle = 0; // Starting point on circle
                 var endAngle = 2 * Math.PI; // End point on circle
-                this.#ctx.fillStyle = this.#color;
 
                 this.#ctx.arc(this.x, this.y, this.radius, startAngle, endAngle);
                 this.#ctx.fill();
+                this.#ctx.fillStyle = prevColor;
             }
 
             clear() {
@@ -119,8 +122,10 @@
             }
 
             #draw() {
+                var prevColor = this.#ctx.fillStyle;
                 this.#ctx.fillStyle = this.#color;
                 this.#ctx.fillRect(this.#x, this.#y, this.#width, this.#height);
+                this.#ctx.fillStyle = prevColor;
             }
 
             #clear() {
@@ -221,10 +226,13 @@
             }
             
             #updateCounter() {
+                var prevColor = this.#ctx.fillStyle;
+                this.#ctx.fillStyle = 'black'
                 this.#ctx.font = "30px Arial";
                 this.#ctx.clearRect(750, 0, 200, 200);
                 // this.#ctx.fillRect(750, 0, 200, 200);
                 this.#ctx.fillText(this.#counter, 750, 30);
+                this.#ctx.fillStyle = prevColor;
             }
 
             #addListeners() {
