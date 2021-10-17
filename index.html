@@ -35,6 +35,7 @@
             }
 
             draw() {
+                this.#ctx.globalCompositeOperation = 'source-over';
                 this.#ctx.beginPath();
                 var startAngle = 0; // Starting point on circle
                 var endAngle = 2 * Math.PI; // End point on circle
@@ -44,24 +45,27 @@
             }
 
             clear() {
+                console.log(this.#ctx.globalCompositeOperation);
+                this.#ctx.globalCompositeOperation = 'destination-out';
                 this.#ctx.beginPath();
                 var startAngle = 0; // Starting point on circle
                 var endAngle = 2 * Math.PI; // End point on circle
-                this.#ctx.arc(this.x, this.y, this.radius + 1, startAngle, endAngle);
+                this.#ctx.arc(this.x, this.y, this.radius +1 , startAngle, endAngle);
                 this.#ctx.fillStyle = "white";
                 this.#ctx.fill();
+                
             }
 
           
         }
 
         class HitBall extends Ball {
-            #interval
-            #isHit
-
+            #interval;
+            #hit;
             constructor(ctx, x, y, radius, color, interval, dest) {
                 super(ctx, x, y, radius, color);
                 this.#interval = interval;
+                this.#hit = false;
                 // setInterval(() => {
                 //     this.clear();
                 //     this.y -=10;
@@ -76,6 +80,15 @@
 
                 // }, 100);  
             }
+
+            setHit() {
+                this.#hit = true;
+            }
+
+            wasHit() {
+                return this.#hit;
+            }
+
         }
 
         class MovingBall extends Ball {
@@ -92,8 +105,9 @@
                     this.draw();
 
                     for(let i=0; i<this.#obstacles.length; i++) {
-                        if (this.#isHit(this.#obstacles[i])) {
+                        if (this.#isHit(this.#obstacles[i]) && this.#obstacles[i].wasHit() == false) {
                             this.#obstacles[i].clear();
+                            this.#obstacles[i].setHit();
                             this.draw();
                         }                         
                     }
@@ -177,12 +191,15 @@
             #PAD_COLOR = 'rgb(255, 0, 0)';
 
             static GAME_AREA_WIDTH = 800;
-            static #GAME_AREA_HEIGHT = 600;
+            static GAME_AREA_HEIGHT = 600;
 
             #balls = [];
             #shootBalls = [];
 
             pad;
+
+            // #shootPossible = true;
+            #shootPossible;
 
             constructor(canvasId, canvasWidth, canvasHeight) {
                 if (canvasHeight < 600 || canvasWidth < 800) {
@@ -201,17 +218,21 @@
             }
 
             init() {
+                // this.#ctx.fillStyle = "white";
+                // this.#ctx.fillRect(0, 0, Game.GAME_AREA_WIDTH, Game.GAME_AREA_HEIGHT);
+
                 this.pad = new Pad(this.#ctx, this.#PAD_INIT_X, this.#PAD_INIT_Y, Game.#PAD_WIDTH, Game.#PAD_HEIGHT, 'rgb(255,0,0)');
                 
                 var X = 60 + (this.#canvasWidth-Game.GAME_AREA_WIDTH)/2 ;
                 var Y = 30;
 
                 for(let i=0; i< 10; i++  ) {
-                    let ball = new Ball(this.#ctx, X, Y, 30, 'rgh(255,0,0)');
+                    let ball = new HitBall(this.#ctx, X, Y, 30, 'rgh(255,0,0)', 0, 0);
                     this.#balls.push(ball);
                     X = X + 70;
                 }
                 this.#addListeners();
+                // this.#setRunners();
             }
 
             startGame() {
@@ -224,6 +245,10 @@
             }
 
             #addListeners() {
+                setInterval(() => {
+                    this.#shootPossible = true;
+                }, 500); 
+
                 window.addEventListener("keydown", e => this.keyListener(e), true) 
             }
 
@@ -236,10 +261,35 @@
                             this.pad.goRight();
                             break;
                         case 32: //space
-                            this.#shoot();
+                            if (this.#shootPossible == true) {
+                                this.#shootPossible = false;
+                                this.#shoot();
+                            }
                             break;
                     }
             }
+
+            // setRunners() {
+            //     setInterval(() => {
+            //         shootballs.array.forEach(element => {
+                        
+            //         });
+                    
+            //         this.clear();
+            //         this.y -=10;
+            //         this.draw();
+
+            //         for(let i=0; i<this.#obstacles.length; i++) {
+            //             if (this.#isHit(this.#obstacles[i])) {
+            //                 this.#obstacles[i].clear();
+            //                 this.draw();
+            //             }                         
+            //         }
+
+            //     }, 100);  {
+
+            //     }
+            // }
 
         }
 
