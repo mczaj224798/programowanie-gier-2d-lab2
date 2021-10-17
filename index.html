@@ -15,76 +15,101 @@
 
     <script>
         // constants
-        const TIME_INTERVAL = 1000; // 1000 ms
-        const RGB_MAX_VALUE = 255;
         const CANVAS_WIDTH = 800;
         const CANVAS_HEIGHT = 600
 
-        // circle dimensions
-        const X = 400;
-        const Y = 300;
-        const RADIUS = 100;
-        const HEIGHT = Y - RADIUS;
-
-
-
-        // wrapper for drawing circle
-        function drawCircle(canvasId, x, y, radius, red, green, blue) {
-            var canvas = document.getElementById(canvasId);
-            if (canvas.getContext) {
-                var ctx = canvas.getContext('2d');
-                ctx.beginPath();
-                var startAngle = 0; // Starting point on circle
-                var endAngle = 2 * Math.PI; // End point on circle
-                ctx.arc(x, y, radius, startAngle, endAngle);
-                ctx.fillStyle = 'rgb(' + red + ','+ green + ',' + blue +')';
-                ctx.fill();
-            }
-        }
-
-        function drawFilledRectangle(canvasId, x, y, width, height, red, green, blue) {
-            var canvas = document.getElementById(canvasId);
-            if (canvas.getContext) {
-                var ctx = canvas.getContext('2d');
-                ctx.fillStyle = 'rgb(' + red + ','+ green + ',' + blue +')';
-                ctx.fillRect(x, y, width, height);
-            }
-        }
-
-        // wrapper for clearing whole canvas
-        function clearCanvas(canvasId) {
-            var canvas = document.getElementById(canvasId);
-            if (canvas.getContext) {
-                var ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-            }
-        }
-
         class Ball {
             #ctx;
-            #x;
-            #y;
+            x;
+            y;
             #radius;
             #color;
 
             constructor(ctx, x, y, radius, color) {
                 this.#ctx = ctx;
-                this.#x = x;
-                this.#y = y;
-                this.#radius = radius;
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
                 this.#color = color;
-                this.#draw();
+                this.draw();
             }
 
-            #draw() {
+            draw() {
                 this.#ctx.beginPath();
                 var startAngle = 0; // Starting point on circle
                 var endAngle = 2 * Math.PI; // End point on circle
-                this.#ctx.arc(this.#x, this.#y, this.#radius, startAngle, endAngle);
+                this.#ctx.arc(this.x, this.y, this.radius, startAngle, endAngle);
                 this.#ctx.fillStyle = this.#color;
                 this.#ctx.fill();
             }
+
+            clear() {
+                this.#ctx.beginPath();
+                var startAngle = 0; // Starting point on circle
+                var endAngle = 2 * Math.PI; // End point on circle
+                this.#ctx.arc(this.x, this.y, this.radius + 1, startAngle, endAngle);
+                this.#ctx.fillStyle = "white";
+                this.#ctx.fill();
+            }
+
+          
         }
+
+        class HitBall extends Ball {
+            #interval
+            #isHit
+
+            constructor(ctx, x, y, radius, color, interval, dest) {
+                super(ctx, x, y, radius, color);
+                this.#interval = interval;
+                // setInterval(() => {
+                //     this.clear();
+                //     this.y -=10;
+                //     this.draw();
+
+                //     for(let i=0; i<this.#obstacles.length; i++) {
+                //         if (this.#isHit(this.#obstacles[i])) {
+                //             this.#obstacles[i].clear();
+                //             this.draw();
+                //         }                         
+                //     }
+
+                // }, 100);  
+            }
+        }
+
+        class MovingBall extends Ball {
+            #obstacles;
+            #interval;
+
+            constructor(ctx, x, y, radius, color, obstacles, interval, dest) {
+                super(ctx, x, y, radius, color);
+                this.#obstacles = obstacles;
+                this.#interval = interval;
+                setInterval(() => {
+                    this.clear();
+                    this.y -=10;
+                    this.draw();
+
+                    for(let i=0; i<this.#obstacles.length; i++) {
+                        if (this.#isHit(this.#obstacles[i])) {
+                            this.#obstacles[i].clear();
+                            this.draw();
+                        }                         
+                    }
+
+                }, 100);  
+            }
+            
+            #isHit(ball) {
+                if (Math.sqrt(Math.pow(ball.x - this.x, 2) + Math.pow(ball.y - this.y, 2)) <= this.radius + ball.radius) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+           
 
         class Pad {
             #ctx;
@@ -113,6 +138,14 @@
                 this.#ctx.clearRect(this.#x, this.#y, this.#width, this.#height);
             }
 
+            getX() {
+                return this.#x + this.#width/2;
+            }
+
+            getY() {
+                return this.#y + this.#height;
+            }
+
             goLeft() {
                 if (this.#x >0 && this.#x < Game.GAME_AREA_WIDTH - this.#width) {
                     this.#clear();
@@ -130,7 +163,6 @@
                 }
             }
         }
-
 
         class Game {
             #ctx;
@@ -169,13 +201,8 @@
             }
 
             init() {
-                //background
-                this.#ctx.fillStyle = 'rgb(128, 128, 128)';
-                this.#ctx.fillRect(0, 0, 800, 600);
-
                 this.pad = new Pad(this.#ctx, this.#PAD_INIT_X, this.#PAD_INIT_Y, Game.#PAD_WIDTH, Game.#PAD_HEIGHT, 'rgb(255,0,0)');
                 
-                //draw initial balls
                 var X = 60 + (this.#canvasWidth-Game.GAME_AREA_WIDTH)/2 ;
                 var Y = 30;
 
@@ -191,19 +218,10 @@
                 this.init();
             }
 
-            // #drawPad(x, y) {
-            //     this.#ctx.fillStyle = this.#PAD_COLOR;
-            //     this.#ctx.fillRect(x, y, Game.#PAD_WIDTH, Game.#PAD_HEIGHT);
-            // }
-
-            // #drawCircle(x, y, radius, color) {
-            //     this.#ctx.beginPath();
-            //     var startAngle = 0; // Starting point on circle
-            //     var endAngle = 2 * Math.PI; // End point on circle
-            //     this.#ctx.arc(x, y, radius, startAngle, endAngle);
-            //     this.#ctx.fillStyle = color;
-            //     this.#ctx.fill();
-            // }
+            #shoot() {
+                let ball = new MovingBall(this.#ctx, this.pad.getX(), this.pad.getY() - Game.#PAD_HEIGHT - 15, 15, 'rgb(0,255,0)', this.#balls, 0, 0);
+                this.#shootBalls.push(ball); 
+            }
 
             #addListeners() {
                 window.addEventListener("keydown", e => this.keyListener(e), true) 
@@ -212,15 +230,12 @@
             keyListener(e) {
                 switch(e.keyCode) {
                         case 37: //left
-                            console.log("left");
                             this.pad.goLeft();
                             break;
                         case 39: //right
-                            console.log("right");
                             this.pad.goRight();
                             break;
                         case 32: //space
-                            console.log("space");
                             this.#shoot();
                             break;
                     }
@@ -231,49 +246,6 @@
         let game = new Game('canvas', CANVAS_WIDTH, CANVAS_HEIGHT);
         game.startGame();
 
-
-        // function startGame() {
-
-
-
-        // }
-        // drawFilledRectangle('canvas', PAD_INIT_X, PAD_INIT_Y, PAD_WIDTH, PAD_HEIGHT, 255, 0, 0);
-
-        // var canvas = document.getElementById(canvasId);
-        //     if (canvas.getContext) {
-        //         var ctx = canvas.getContext('2d');
-        //         ctx.rect(canvas, x, y, width, height);
-        //         ctx.fillStyle = 'rgb(' + red + ','+ green + ',' + blue +')';
-        //         ctx.fill();
-        //     }
-
-        
-        // var count = 0;
-
-        // //starting circle - green
-        // drawCircle('canvas', 0, RGB_MAX_VALUE, 0);
-        // var color = "green";
-
-        // setInterval(() => {  
-        //     clearCanvas('canvas');
-
-        //     if ( color == "green") {
-        //         drawCircle('canvas', X, Y+count*(HEIGHT/RGB_MAX_VALUE), RADIUS, 0, (RGB_MAX_VALUE - count), count);
-        //     } else {
-        //         drawCircle('canvas', X, CANVAS_HEIGHT-RADIUS-count*(HEIGHT/RGB_MAX_VALUE), RADIUS, 0, count, (RGB_MAX_VALUE - count));
-        //     }
-        //     count++;
-
-        //     // reset counter and toggle color
-        //     if (count == RGB_MAX_VALUE) {
-        //         count = 0;
-        //         if (color == "green") {
-        //             color = "blue"
-        //         } else {
-        //             color = "green";
-        //         }
-        //     }
-        //  }, TIME_INTERVAL/RGB_MAX_VALUE);
   
     </script>
 </body>
