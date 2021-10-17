@@ -1,0 +1,229 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Canvas</title>
+    <meta name="author" content="Maciej Czajkowski">
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600">
+
+    </canvas>
+
+    <script>
+        // constants
+        const TIME_INTERVAL = 1000; // 1000 ms
+        const RGB_MAX_VALUE = 255;
+        const CANVAS_WIDTH = 800;
+        const CANVAS_HEIGHT = 600
+
+        // circle dimensions
+        const X = 400;
+        const Y = 300;
+        const RADIUS = 100;
+        const HEIGHT = Y - RADIUS;
+
+
+
+        // wrapper for drawing circle
+        function drawCircle(canvasId, x, y, radius, red, green, blue) {
+            var canvas = document.getElementById(canvasId);
+            if (canvas.getContext) {
+                var ctx = canvas.getContext('2d');
+                ctx.beginPath();
+                var startAngle = 0; // Starting point on circle
+                var endAngle = 2 * Math.PI; // End point on circle
+                ctx.arc(x, y, radius, startAngle, endAngle);
+                ctx.fillStyle = 'rgb(' + red + ','+ green + ',' + blue +')';
+                ctx.fill();
+            }
+        }
+
+        function drawFilledRectangle(canvasId, x, y, width, height, red, green, blue) {
+            var canvas = document.getElementById(canvasId);
+            if (canvas.getContext) {
+                var ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'rgb(' + red + ','+ green + ',' + blue +')';
+                ctx.fillRect(x, y, width, height);
+            }
+        }
+
+        // wrapper for clearing whole canvas
+        function clearCanvas(canvasId) {
+            var canvas = document.getElementById(canvasId);
+            if (canvas.getContext) {
+                var ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            }
+        }
+
+        class Ball {
+            #ctx;
+            #x;
+            #y;
+            #radius;
+            #color;
+
+            constructor(ctx, x, y, radius, color) {
+                this.#ctx = ctx;
+                this.#x = x;
+                this.#y = y;
+                this.#radius = radius;
+                this.#color = color;
+                this.#draw();
+            }
+
+            #draw() {
+                this.#ctx.beginPath();
+                var startAngle = 0; // Starting point on circle
+                var endAngle = 2 * Math.PI; // End point on circle
+                this.#ctx.arc(this.#x, this.#y, this.#radius, startAngle, endAngle);
+                this.#ctx.fillStyle = this.#color;
+                this.#ctx.fill();
+            }
+        }
+
+
+        class Game {
+            #ctx;
+            #canvasWidth;
+            #canvasHeight
+
+            // pad variables
+            static #PAD_WIDTH  = 100;
+            static #PAD_HEIGHT = 10;
+            #PAD_INIT_X;
+            #PAD_INIT_Y;
+            #PAD_COLOR = 'rgb(255, 0, 0)';
+
+            static #GAME_AREA_WIDTH = 800;
+            static #GAME_AREA_HEIGHT = 600;
+
+            #balls = [];
+
+            constructor(canvasId, canvasWidth, canvasHeight) {
+                if (canvasHeight < 600 || canvasWidth < 800) {
+                    //error
+                }
+                var canvas = document.getElementById(canvasId);
+                if (canvas.getContext) {
+                    this.#ctx = canvas.getContext('2d');
+                    this.#canvasHeight = canvasHeight;
+                    this.#canvasWidth = canvasWidth;
+                    this.#PAD_INIT_X = canvasWidth/2 - Game.#PAD_WIDTH/2;
+                    this.#PAD_INIT_Y = canvasHeight - Game.#PAD_HEIGHT;
+                } else {
+                    //error
+                }
+            }
+
+            init() {
+                //background
+                this.#ctx.fillStyle = 'rgb(128, 128, 128)';
+                this.#ctx.fillRect(0, 0, 800, 600);
+                this.#drawPad(this.#PAD_INIT_X, this.#PAD_INIT_Y);
+                
+                //draw initial balls
+                var X = 60 + (this.#canvasWidth-Game.#GAME_AREA_WIDTH)/2 ;
+                var Y = 30;
+
+                for(let i=0; i< 10; i++  ) {
+                    let ball = new Ball(this.#ctx, X, Y, 30, 'rgh(255,0,0)');
+                    this.#balls.push(ball);
+                    X = X + 70;
+                }
+
+
+                this.#addListeners();
+            }
+
+            startGame() {
+                this.init();
+            }
+
+            #drawPad(x, y) {
+                this.#ctx.fillStyle = this.#PAD_COLOR;
+                this.#ctx.fillRect(x, y, Game.#PAD_WIDTH, Game.#PAD_HEIGHT);
+            }
+
+            #drawCircle(x, y, radius, color) {
+                this.#ctx.beginPath();
+                var startAngle = 0; // Starting point on circle
+                var endAngle = 2 * Math.PI; // End point on circle
+                this.#ctx.arc(x, y, radius, startAngle, endAngle);
+                this.#ctx.fillStyle = color;
+                this.#ctx.fill();
+            }
+
+            #addListeners() {
+                window.addEventListener("keydown", function(e) {
+                    switch(e.keyCode) {
+                        case 37: //left
+                            console.log("left");
+                            break;
+                        case 39: //right
+                            console.log("right");
+                            break;
+                        case 32: //space
+                            console.log("space");
+                            break;
+                    }
+                })
+            }
+
+        }
+
+        let game = new Game('canvas', CANVAS_WIDTH, CANVAS_HEIGHT);
+        game.startGame();
+
+
+        // function startGame() {
+
+
+
+        // }
+        // drawFilledRectangle('canvas', PAD_INIT_X, PAD_INIT_Y, PAD_WIDTH, PAD_HEIGHT, 255, 0, 0);
+
+        // var canvas = document.getElementById(canvasId);
+        //     if (canvas.getContext) {
+        //         var ctx = canvas.getContext('2d');
+        //         ctx.rect(canvas, x, y, width, height);
+        //         ctx.fillStyle = 'rgb(' + red + ','+ green + ',' + blue +')';
+        //         ctx.fill();
+        //     }
+
+        
+        // var count = 0;
+
+        // //starting circle - green
+        // drawCircle('canvas', 0, RGB_MAX_VALUE, 0);
+        // var color = "green";
+
+        // setInterval(() => {  
+        //     clearCanvas('canvas');
+
+        //     if ( color == "green") {
+        //         drawCircle('canvas', X, Y+count*(HEIGHT/RGB_MAX_VALUE), RADIUS, 0, (RGB_MAX_VALUE - count), count);
+        //     } else {
+        //         drawCircle('canvas', X, CANVAS_HEIGHT-RADIUS-count*(HEIGHT/RGB_MAX_VALUE), RADIUS, 0, count, (RGB_MAX_VALUE - count));
+        //     }
+        //     count++;
+
+        //     // reset counter and toggle color
+        //     if (count == RGB_MAX_VALUE) {
+        //         count = 0;
+        //         if (color == "green") {
+        //             color = "blue"
+        //         } else {
+        //             color = "green";
+        //         }
+        //     }
+        //  }, TIME_INTERVAL/RGB_MAX_VALUE);
+  
+    </script>
+</body>
+
+</html>
