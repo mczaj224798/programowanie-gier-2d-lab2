@@ -1,6 +1,6 @@
 <!doctype html>
 
-<html lang="en">
+<html lang="pl">
 
 <head>
     <meta charset="utf-8">
@@ -42,17 +42,21 @@
                 this.#ctx.arc(this.x, this.y, this.radius, startAngle, endAngle);
                 this.#ctx.fillStyle = this.#color;
                 this.#ctx.fill();
+                this.#ctx.closePath();
+
             }
 
             clear() {
-                console.log(this.#ctx.globalCompositeOperation);
                 this.#ctx.globalCompositeOperation = 'destination-out';
                 this.#ctx.beginPath();
                 var startAngle = 0; // Starting point on circle
                 var endAngle = 2 * Math.PI; // End point on circle
                 this.#ctx.arc(this.x, this.y, this.radius +1 , startAngle, endAngle);
-                this.#ctx.fillStyle = "white";
+                this.#ctx.fillStyle = this.#color;
                 this.#ctx.fill();
+                this.#ctx.closePath();
+                this.#ctx.globalCompositeOperation = 'source-over';
+
                 
             }
 
@@ -66,19 +70,6 @@
                 super(ctx, x, y, radius, color);
                 this.#interval = interval;
                 this.#hit = false;
-                // setInterval(() => {
-                //     this.clear();
-                //     this.y -=10;
-                //     this.draw();
-
-                //     for(let i=0; i<this.#obstacles.length; i++) {
-                //         if (this.#isHit(this.#obstacles[i])) {
-                //             this.#obstacles[i].clear();
-                //             this.draw();
-                //         }                         
-                //     }
-
-                // }, 100);  
             }
 
             setHit() {
@@ -89,17 +80,25 @@
                 return this.#hit;
             }
 
+            goDown() {
+                this.clear();
+                this.y += 65;
+                this.draw();
+            }
+
         }
 
         class MovingBall extends Ball {
             #obstacles;
+            #ms;
             #interval;
 
-            constructor(ctx, x, y, radius, color, obstacles, interval, dest) {
+            constructor(ctx, x, y, radius, color, obstacles, ms, dest) {
                 super(ctx, x, y, radius, color);
                 this.#obstacles = obstacles;
-                this.#interval = interval;
-                setInterval(() => {
+                this.#ms = ms;
+                this.#interval = setInterval(() => {
+                    if (this.y >= -10) {
                     this.clear();
                     this.y -=10;
                     this.draw();
@@ -109,9 +108,9 @@
                             this.#obstacles[i].clear();
                             this.#obstacles[i].setHit();
                             this.draw();
-                        }                         
+                        }                        
                     }
-
+                }
                 }, 100);  
             }
             
@@ -121,6 +120,10 @@
                 } else {
                     return false;
                 }
+            }
+
+            getInterval() {
+                return this.#interval;
             }
         }
            
@@ -169,9 +172,8 @@
             }
 
             goRight() {
-                if (this.#x >0 && this.#x < Game.GAME_AREA_WIDTH - this.#width) {
+                if (this.#x >0 && this.#x < Game.GAME_AREA_WIDTH - this.#width - 100) {
                     this.#clear();
-                    console.log(this.#x)
                     this.#x += 10;
                     this.#draw();
                 }
@@ -197,9 +199,10 @@
             #shootBalls = [];
 
             pad;
-
-            // #shootPossible = true;
             #shootPossible;
+            #counter;
+
+            #intervals = [];
 
             constructor(canvasId, canvasWidth, canvasHeight) {
                 if (canvasHeight < 600 || canvasWidth < 800) {
@@ -210,7 +213,7 @@
                     this.#ctx = canvas.getContext('2d');
                     this.#canvasHeight = canvasHeight;
                     this.#canvasWidth = canvasWidth;
-                    this.#PAD_INIT_X = canvasWidth/2 - Game.#PAD_WIDTH/2;
+                    this.#PAD_INIT_X = canvasWidth/2 - Game.#PAD_WIDTH/2 -100;
                     this.#PAD_INIT_Y = canvasHeight - Game.#PAD_HEIGHT;
                 } else {
                     //error
@@ -218,21 +221,20 @@
             }
 
             init() {
-                // this.#ctx.fillStyle = "white";
-                // this.#ctx.fillRect(0, 0, Game.GAME_AREA_WIDTH, Game.GAME_AREA_HEIGHT);
+                this.pad = new Pad(this.#ctx, this.#PAD_INIT_X, this.#PAD_INIT_Y, Game.#PAD_WIDTH, Game.#PAD_HEIGHT, 'rgb(0,255,0)');
+                this.#counter = 0;
+                this.#updateCounter();
 
-                this.pad = new Pad(this.#ctx, this.#PAD_INIT_X, this.#PAD_INIT_Y, Game.#PAD_WIDTH, Game.#PAD_HEIGHT, 'rgb(255,0,0)');
-                
                 var X = 60 + (this.#canvasWidth-Game.GAME_AREA_WIDTH)/2 ;
-                var Y = 30;
+                var Y = 30; 
 
-                for(let i=0; i< 10; i++  ) {
-                    let ball = new HitBall(this.#ctx, X, Y, 30, 'rgh(255,0,0)', 0, 0);
+                for(let i=0; i< 8; i++  ) {
+                    let ball = new HitBall(this.#ctx, X, Y, 20, 'rgh(255,0,0)', 0, 0);
                     this.#balls.push(ball);
                     X = X + 70;
                 }
                 this.#addListeners();
-                // this.#setRunners();
+                this.#setRunners();
             }
 
             startGame() {
@@ -240,14 +242,22 @@
             }
 
             #shoot() {
-                let ball = new MovingBall(this.#ctx, this.pad.getX(), this.pad.getY() - Game.#PAD_HEIGHT - 15, 15, 'rgb(0,255,0)', this.#balls, 0, 0);
+                var ball = new MovingBall(this.#ctx, this.pad.getX(), this.pad.getY() - Game.#PAD_HEIGHT - 15, 15, 'rgb(0,255,0)', this.#balls, 0, 0);
                 this.#shootBalls.push(ball); 
+            }
+            
+            #updateCounter() {
+                this.#ctx.font = "30px Arial";
+                this.#ctx.clearRect(750, 30, 30, 30);
+                this.#ctx.fillText(this.#counter, 750, 30);
             }
 
             #addListeners() {
+
+                // we block shoot spaming
                 setInterval(() => {
                     this.#shootPossible = true;
-                }, 500); 
+                }, 750 ); 
 
                 window.addEventListener("keydown", e => this.keyListener(e), true) 
             }
@@ -269,27 +279,52 @@
                     }
             }
 
-            // setRunners() {
-            //     setInterval(() => {
-            //         shootballs.array.forEach(element => {
+            #setRunners() {
+                let interval = setInterval(() => {
+                    for(let i=0; i<this.#balls.length; i++) {
+                        if (!this.#balls[i].wasHit()) { 
+                            this.#balls[i].goDown();    
+                        } else {
+                            this.#counter++;
+                            this.#updateCounter();
+                        }
+                        if(this.#balls[i].y > 600) {
+                            this.#gameOver();
+                        }
+
                         
-            //         });
-                    
-            //         this.clear();
-            //         this.y -=10;
-            //         this.draw();
+                    }
+                    var X = 60 + (this.#canvasWidth-Game.GAME_AREA_WIDTH)/2 ;
+                    var Y = 30; 
+                    for(let i=0; i< 8; i++ ) {
+                            this.#balls.push(new HitBall(this.#ctx, X, Y, 20, 'rgh(255,0,0)', 0, 0));
+                            X = X + 70;
+                    }
+                    this.#intervals.push(interval);
+                }, 2000); 
+            }
 
-            //         for(let i=0; i<this.#obstacles.length; i++) {
-            //             if (this.#isHit(this.#obstacles[i])) {
-            //                 this.#obstacles[i].clear();
-            //                 this.draw();
-            //             }                         
-            //         }
+            #gameOver() {
+                console.log("GAME OVER!");
 
-            //     }, 100);  {
+                this.#intervals.forEach(interval => {clearInterval(interval);});
+                this.#shootBalls.forEach(ball => {clearInterval(ball.getInterval())});
+                // this.#ctx.globalCompositeOperation = 'source-over';
+                // this.#ctx.clearRect(0, 0, Game.GAME_AREA_WIDTH, Game.GAME_AREA_HEIGHT)
+                // this.#ctx.beginPath();
+                this.#ctx.fill();
+                this.#ctx.globalCompositeOperation = 'source-over';
+                this.#ctx.fillStyle = 'white';
+                // this.#ctx.fillRect(0, 0, Game.GAME_AREA_WIDTH, Game.GAME_AREA_HEIGHT);
+                this.#ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            //     }
-            // }
+
+                this.#ctx.globalCompositeOperation = 'source-over';
+                this.#ctx.font = "80px Arial";
+                this.#ctx.fillStyle = 'black';
+                this.#ctx.fillText("GAME OVER", 0, Game.GAME_AREA_HEIGHT/2);
+
+            }
 
         }
 
