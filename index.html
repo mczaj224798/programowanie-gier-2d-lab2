@@ -86,6 +86,51 @@
             }
         }
 
+        class Pad {
+            #ctx;
+            #x;
+            #y;
+            #width;
+            #height;
+            #color;
+
+            constructor(ctx, x,y, width, height, color) {
+                this.#ctx = ctx;
+                this.#x = x;
+                this.#y = y;
+                this.#width = width;
+                this.#height = height;
+                this.#color = color;
+                this.#draw();
+            }
+
+            #draw() {
+                this.#ctx.fillStyle = this.#color;
+                this.#ctx.fillRect(this.#x, this.#y, this.#width, this.#height);
+            }
+
+            #clear() {
+                this.#ctx.clearRect(this.#x, this.#y, this.#width, this.#height);
+            }
+
+            goLeft() {
+                if (this.#x >0 && this.#x < Game.GAME_AREA_WIDTH - this.#width) {
+                    this.#clear();
+                    this.#x -= 10;
+                    this.#draw();
+                }
+            }
+
+            goRight() {
+                if (this.#x >0 && this.#x < Game.GAME_AREA_WIDTH - this.#width) {
+                    this.#clear();
+                    console.log(this.#x)
+                    this.#x += 10;
+                    this.#draw();
+                }
+            }
+        }
+
 
         class Game {
             #ctx;
@@ -99,10 +144,13 @@
             #PAD_INIT_Y;
             #PAD_COLOR = 'rgb(255, 0, 0)';
 
-            static #GAME_AREA_WIDTH = 800;
+            static GAME_AREA_WIDTH = 800;
             static #GAME_AREA_HEIGHT = 600;
 
             #balls = [];
+            #shootBalls = [];
+
+            pad;
 
             constructor(canvasId, canvasWidth, canvasHeight) {
                 if (canvasHeight < 600 || canvasWidth < 800) {
@@ -124,10 +172,11 @@
                 //background
                 this.#ctx.fillStyle = 'rgb(128, 128, 128)';
                 this.#ctx.fillRect(0, 0, 800, 600);
-                this.#drawPad(this.#PAD_INIT_X, this.#PAD_INIT_Y);
+
+                this.pad = new Pad(this.#ctx, this.#PAD_INIT_X, this.#PAD_INIT_Y, Game.#PAD_WIDTH, Game.#PAD_HEIGHT, 'rgb(255,0,0)');
                 
                 //draw initial balls
-                var X = 60 + (this.#canvasWidth-Game.#GAME_AREA_WIDTH)/2 ;
+                var X = 60 + (this.#canvasWidth-Game.GAME_AREA_WIDTH)/2 ;
                 var Y = 30;
 
                 for(let i=0; i< 10; i++  ) {
@@ -135,8 +184,6 @@
                     this.#balls.push(ball);
                     X = X + 70;
                 }
-
-
                 this.#addListeners();
             }
 
@@ -144,34 +191,39 @@
                 this.init();
             }
 
-            #drawPad(x, y) {
-                this.#ctx.fillStyle = this.#PAD_COLOR;
-                this.#ctx.fillRect(x, y, Game.#PAD_WIDTH, Game.#PAD_HEIGHT);
-            }
+            // #drawPad(x, y) {
+            //     this.#ctx.fillStyle = this.#PAD_COLOR;
+            //     this.#ctx.fillRect(x, y, Game.#PAD_WIDTH, Game.#PAD_HEIGHT);
+            // }
 
-            #drawCircle(x, y, radius, color) {
-                this.#ctx.beginPath();
-                var startAngle = 0; // Starting point on circle
-                var endAngle = 2 * Math.PI; // End point on circle
-                this.#ctx.arc(x, y, radius, startAngle, endAngle);
-                this.#ctx.fillStyle = color;
-                this.#ctx.fill();
-            }
+            // #drawCircle(x, y, radius, color) {
+            //     this.#ctx.beginPath();
+            //     var startAngle = 0; // Starting point on circle
+            //     var endAngle = 2 * Math.PI; // End point on circle
+            //     this.#ctx.arc(x, y, radius, startAngle, endAngle);
+            //     this.#ctx.fillStyle = color;
+            //     this.#ctx.fill();
+            // }
 
             #addListeners() {
-                window.addEventListener("keydown", function(e) {
-                    switch(e.keyCode) {
+                window.addEventListener("keydown", e => this.keyListener(e), true) 
+            }
+
+            keyListener(e) {
+                switch(e.keyCode) {
                         case 37: //left
                             console.log("left");
+                            this.pad.goLeft();
                             break;
                         case 39: //right
                             console.log("right");
+                            this.pad.goRight();
                             break;
                         case 32: //space
                             console.log("space");
+                            this.#shoot();
                             break;
                     }
-                })
             }
 
         }
